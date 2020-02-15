@@ -17,6 +17,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+
 public class Selenium extends WebCrawler{
 	private List <WebElement> getSearchLinks;
 	private List <WebElement> commentsList;
@@ -51,8 +52,8 @@ public class Selenium extends WebCrawler{
 		super(baseLink, depth);
 		
 		ChromeOptions options = new ChromeOptions();
-		options.addExtensions(new File("extension_1_24_4_0.crx"));
-		System.setProperty("webdriver.chrome.driver", "chromedriver.exe");
+		options.addArguments("--headless", "--disable-gpu", "--window-size=1600,900","--ignore-certificate-errors");
+		System.setProperty("webdriver.chrome.driver", "D:\\Work\\ICT1009\\chromedriver_win32\\chromedriver.exe");
 		driver = new ChromeDriver(options);
 		driver.get(baseLink);
 		wait = new WebDriverWait(driver, 20);
@@ -92,7 +93,7 @@ public class Selenium extends WebCrawler{
 			System.out.println(i);
 		}
 		
-		System.out.println("Count of elements = "+ this.getURLs().size());
+		System.out.println("Total number of links = "+ this.getURLs().size());
 	}
 	
 	public void getData() throws InterruptedException, Exception, NoSuchElementException {
@@ -182,33 +183,43 @@ public class Selenium extends WebCrawler{
 				String temp_string;
 				for (int i = 0; i < max; i++) {
 					article.add(articleName.getText());
-					comments.add(commentsList.get(i).getText().trim().replace("\n", " "));
+					comments.add(commentsList.get(i).getText().trim().replace("\n", " ").replace("\"", "\'"));
 					user_name.add(getName.get(i).getText());
 					num_ThumbsUp = new Scanner(getThumbsUp.get(i).getAttribute("aria-label"));
 					num_ThumbsDown = new Scanner(getThumbsDown.get(i).getAttribute("aria-label"));
 					extractDateTime = new Scanner(getDatetime.get(i).getText());
-					temp_int = extractDateTime.next();
-					temp_string = extractDateTime.next();
-
 					thumbsUp.add(num_ThumbsUp.next());
 					thumbsDown.add(num_ThumbsDown.next());
 					
-					if (temp_string.equals("minutes") || temp_string.equals("minute")) {
-						convertTimeAgo = LocalDateTime.now().minus(Duration.ofMinutes(Integer.parseInt(temp_int)));
-						dateTime.add(f_datetime.format(convertTimeAgo));
+					temp_int = extractDateTime.next();
+					
+					if (extractDateTime.hasNext()) {
+						temp_string = extractDateTime.next();
+						
+						if (temp_string.equals("minutes") || temp_string.equals("minute")) {
+							convertTimeAgo = LocalDateTime.now().minus(Duration.ofMinutes(Integer.parseInt(temp_int)));
+							dateTime.add(f_datetime.format(convertTimeAgo));
+						}
+						else if (temp_string.equals("hour") || temp_string.equals("hours")) {
+							convertTimeAgo = LocalDateTime.now().minus(Duration.ofHours(Integer.parseInt(temp_int)));
+							dateTime.add(f_datetime.format(convertTimeAgo));
+						}
+						else if (temp_string.equals("days") || temp_string.equals("day")) {
+							convertTimeAgo = LocalDateTime.now().minus(Duration.ofDays(Integer.parseInt(temp_int)));
+							dateTime.add(f_datetime.format(convertTimeAgo));
+						}
+						else if (temp_string.equals("seconds") || temp_string.equals("second")) {
+							convertTimeAgo = LocalDateTime.now().minus(Duration.ofSeconds(Integer.parseInt(temp_int)));
+							dateTime.add(f_datetime.format(convertTimeAgo));
+						}
 					}
-					else if (temp_string.equals("hour") || temp_string.equals("hours")) {
-						convertTimeAgo = LocalDateTime.now().minus(Duration.ofHours(Integer.parseInt(temp_int)));
-						dateTime.add(f_datetime.format(convertTimeAgo));
+					else {
+						if (temp_int.equals("yesterday")) {
+							convertTimeAgo = LocalDateTime.now().minus(Duration.ofDays(1));
+							dateTime.add(f_datetime.format(convertTimeAgo));
+						}
 					}
-					else if (temp_string.equals("days") || temp_string.equals("day")) {
-						convertTimeAgo = LocalDateTime.now().minus(Duration.ofDays(Integer.parseInt(temp_int)));
-						dateTime.add(f_datetime.format(convertTimeAgo));
-					}
-					else if (temp_string.equals("seconds") || temp_string.equals("second")) {
-						convertTimeAgo = LocalDateTime.now().minus(Duration.ofSeconds(Integer.parseInt(temp_int)));
-						dateTime.add(f_datetime.format(convertTimeAgo));
-					}
+					
 				}
 			}
 			
@@ -223,14 +234,14 @@ public class Selenium extends WebCrawler{
 			}
 			
 			File output = new File(fileName);
-			FileOutputStream fos = new FileOutputStream(output);	 
+			FileOutputStream fos = new FileOutputStream(output, false);	 
 			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 			
 			bw.write("Article," + "User," + "Date," + "Likes," + "Dislikes," + "Comments");
 			bw.newLine();
 			int size = user_name.size()
 	;		for (int i = 0; i < size; i++) {
-				bw.write("\"" + article.get(i) + "\"," + user_name.get(i) + "," + dateTime.get(i) + "," + 
+				bw.write("\"" + article.get(i) + "\",\"" + user_name.get(i) + "\"," + dateTime.get(i) + "," + 
 						thumbsUp.get(i) + "," + thumbsDown.get(i) + ",\"" + comments.get(i) + "\"");
 				bw.newLine();
 			}
