@@ -237,8 +237,11 @@ public class Selenium extends WebCrawler{
 		 
 			bw.close();
 		}
-		catch (IOException | IllegalArgumentException e) {
+		catch (IllegalArgumentException e) {
 			System.out.println("No such element found.");
+		}
+		catch (IOException e) {
+			System.out.println(e);
 		}
 		
 	}
