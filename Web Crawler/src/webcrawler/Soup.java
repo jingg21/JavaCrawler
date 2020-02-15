@@ -23,7 +23,7 @@ public class Soup extends WebCrawler{
 		this.addBlacklist("#", "cars", "civis", "store", "gaming", "video", "staff", 
 				"technopaedia", "author", "start=", "uploads", "tag", "mail", "video", 
 				"apple", "advert", "reprints", "newsletters", "about-us", "rss", "conde", "reviews",
-				"?view", "staff-directory", "?theme");
+				"?view", "staff-directory", "?theme", "features", "contact-us");
 		this.keyword = new String();
 	}
 	
@@ -49,7 +49,7 @@ public class Soup extends WebCrawler{
 	//crawl base URL provided
 	public void crawl(String url, int lowerDepth) {
 		//checks list if already crawled, lesser than MAX_DEPTH, and if base link is present
-		if(!this.getURLs().contains(url) && lowerDepth < this.getDepth() && url.contains(this.getBaseLink())) {
+		if(!this.getURLs().contains(url) && lowerDepth < this.getDepth() && url.contains(this.getBaseLink()) && this.getKeyword() != null) {
 			//Grabs links from sites recursively
 			try {
 				for(String word:this.getBlacklist()) {
@@ -57,12 +57,12 @@ public class Soup extends WebCrawler{
 						return;
 					}
 				}
-				//add current URL to ArrayList - prevent infinite loop
+				//add current URL to URL list
 				this.addURLs(url);
 				Document site = Jsoup.connect(url).get();
 				System.out.printf("Crawling Depth %d: %s\nURL: %s\n", lowerDepth, site.title(), url);
 				//grab Data here if site has keyword to avoid going through the whole list a second time
-				getData(keyword, site);
+				getData(keyword, site, url);
 				//select all <a> tags
 				Elements linksOnPage = site.select("a[href]");
 				lowerDepth++;
@@ -78,21 +78,35 @@ public class Soup extends WebCrawler{
 	}
 	
 	//grab data from current URL site with reference to keyword and the tags
-	public void getData(String keyword, Document site) {
+	public void getData(String keyword, Document site, String url) {
 	//loop through past URLs to scrape data
 		try {
 			Elements article = site.select("div.article-content");
-			//Elements name = site.select("li.comment > header");
 			Elements data = site.select("li.comment");
-			//if data does not contain keyword, throw exception
-			if(article.text().contains(keyword)) {
+			
+			//if article contains keyword, take comments
+			if(article.text().contains(keyword) && url.contains("?comments=1")) {
 				System.out.println("Parsing " + site.title());
+				//append to string array
+				int y = countElements(data);
+				String[] buffer = new String[y+2];
+				buffer[0] = site.title();
+				buffer[1] = article.text();
+				int x = 2;
+				for(Element comment:data) {
+					buffer[x] = comment.text();
+					x++;
+				}
 				ArrayList<String[]> CSVbuffer = new ArrayList<String[]>();
-				CSVbuffer.add(new String[] {article.text(), data.text()});
+				//add to CSV title > article > comments
+				CSVbuffer.add(buffer);
 				writeToCSV(CSVbuffer);
+				//set to null after use
+				CSVbuffer = null;
+				buffer = null;
 			}
 			else {
-				throw new IOException("Keyword or tag not found, skipping site");
+				throw new IOException("Keyword or tag comment not found, moving on to next link");
 			}
 		}
 		catch(IOException e) {
@@ -123,7 +137,7 @@ public class Soup extends WebCrawler{
 	      .collect(Collectors.joining(","));
 	}
 	
-	//used to escape special characters when writing to csv
+	//used to escape special characters when writing to CSV
 	public String escapeSpecialCharacters(String data) {
 	    String escapedData = data.replaceAll("\\R", " ");
 	    if (data.contains(",") || data.contains("\"") || data.contains("'")) {
@@ -131,6 +145,15 @@ public class Soup extends WebCrawler{
 	        escapedData = "\"" + data + "\"";
 	    }
 	    return escapedData;
+	}
+	
+	//count number of elements
+	public int countElements(Elements data) {
+		int count = 0;
+		for(@SuppressWarnings("unused") Element comment:data) {
+			count++;
+		}
+		return count;
 	}
 	
 }
