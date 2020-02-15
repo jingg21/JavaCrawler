@@ -51,8 +51,8 @@ public class Selenium extends WebCrawler{
 		super(baseLink, depth);
 		
 		ChromeOptions options = new ChromeOptions();
-		options.addExtensions(new File("D:\\Work\\ICT1009\\extension_1_24_4_0.crx"));
-		System.setProperty("webdriver.chrome.driver", "D:\\Work\\ICT1009\\chromedriver_win32_test1\\chromedriver.exe");
+		options.addExtensions(new File("extension_1_24_4_0.crx"));
+		System.setProperty("webdriver.chrome.driver", "chromedriver.exe");
 		driver = new ChromeDriver(options);
 		driver.get(baseLink);
 		wait = new WebDriverWait(driver, 20);
