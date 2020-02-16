@@ -60,7 +60,7 @@ public class Soup extends WebCrawler{
 				//add current URL to URL list
 				this.addURLs(url);
 				Document site = Jsoup.connect(url).get();
-				System.out.printf("Crawling Depth %d: %s\nURL: %s\n", lowerDepth, site.title(), url);
+				System.out.printf("Crawling Depth %d: %s\n", lowerDepth, url);
 				//grab Data here if site has keyword to avoid going through the whole list a second time
 				getData(keyword, site, url);
 				//select all <a> tags
@@ -81,31 +81,27 @@ public class Soup extends WebCrawler{
 	public void getData(String keyword, Document site, String url) {
 	//loop through past URLs to scrape data
 		try {
+			//get relevant elements
 			Elements article = site.select("div.article-content");
-			Elements data = site.select("li.comment");
+			Elements name = site.select("span.author > a");
+			Elements upvotes = site.select("li.comment");
+			Elements downvotes = site.select("li.comment");
+			Elements time = site.select("li.comment > header > aside.icons > a.datetime");
+			Elements data = site.select("li.comment > div.body");
 			
 			//if article contains keyword, take comments
 			if(article.text().contains(keyword) && url.contains("?comments=1")) {
 				System.out.println("Parsing " + site.title());
-				//append to string array
-				int y = countElements(data);
-				String[] buffer = new String[y+2];
-				buffer[0] = site.title();
-				buffer[1] = article.text();
-				int x = 2;
-				for(Element comment:data) {
-					buffer[x] = comment.text();
-					x++;
-				}
 				ArrayList<String[]> CSVbuffer = new ArrayList<String[]>();
-				//add to CSV title > article > comments
-				CSVbuffer.add(buffer);
+				//append to CSVbuffer (title > user > date > up-votes > down-votes > comment) 
+				for(int i = 0; i < data.size(); i++) {
+					CSVbuffer.add(new String[] {site.title(), name.get(i).text(), time.get(i).text(), 
+							upvotes.get(i).attr("data-post-positive"), downvotes.get(i).attr("data-post-negative"), data.get(i).text()});
+				}
 				writeToCSV(CSVbuffer);
-				//set to null after use
-				CSVbuffer = null;
-				buffer = null;
 			}
 			else {
+				//tag or keyword not found within the site
 				throw new IOException("Keyword or tag comment not found, moving on to next link");
 			}
 		}
@@ -146,14 +142,4 @@ public class Soup extends WebCrawler{
 	    }
 	    return escapedData;
 	}
-	
-	//count number of elements
-	public int countElements(Elements data) {
-		int count = 0;
-		for(@SuppressWarnings("unused") Element comment:data) {
-			count++;
-		}
-		return count;
-	}
-	
 }
