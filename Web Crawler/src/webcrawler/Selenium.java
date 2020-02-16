@@ -29,8 +29,8 @@ public class Selenium extends WebCrawler{
 	private ArrayList<String> comments;
 	private ArrayList<String> user_name;
 	private ArrayList<String> dateTime;
-	private ArrayList<String> thumbsUp;
-	private ArrayList<String> thumbsDown;
+	private ArrayList<Integer> thumbsUp;
+	private ArrayList<Integer> thumbsDown;
 	private String verizonXpath;
 	private String verizonXpath2;
 	private String commentsXpath;
@@ -100,10 +100,10 @@ public class Selenium extends WebCrawler{
 		commentsList = new ArrayList<WebElement>();
 		comments = new ArrayList<String>();
 		user_name = new ArrayList<String>();
-		thumbsUp = new ArrayList<String>();
-		thumbsDown = new ArrayList<String>();
 		dateTime = new ArrayList<String>();
 		article = new ArrayList<String>();
+		thumbsUp = new ArrayList<Integer>();
+		thumbsDown = new ArrayList<Integer>();
 		
 		for (String links : this.getURLs()) {
 			try {
@@ -132,6 +132,12 @@ public class Selenium extends WebCrawler{
 					topReactions = "//*[contains(@class, 'sort-filter-button')]";
 					latestReactions = "//*[contains(@class, 'sort-by-created')]";
 					wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath(commentsXpath)));
+					
+					if (!(driver.findElements(By.xpath(topReactions)).size() > 0)) {
+						driver.navigate().refresh();
+						wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath(commentsXpath)));
+					}
+					
 					driver.findElement(By.xpath(commentsXpath)).click();
 					Thread.sleep(2000);
 					Boolean findSort = driver.findElements(By.xpath(topReactions)).size() > 0;
@@ -174,7 +180,7 @@ public class Selenium extends WebCrawler{
 					articleName = driver.findElement(By.xpath("//*[contains(@itemprop, 'headline')]"));
 				}
 				catch (NoSuchElementException e) {
-					System.out.println(e);
+					System.out.println("No element found.");
 				}
 
 				int max = commentsList.size();
@@ -188,8 +194,8 @@ public class Selenium extends WebCrawler{
 					num_ThumbsUp = new Scanner(getThumbsUp.get(i).getAttribute("aria-label"));
 					num_ThumbsDown = new Scanner(getThumbsDown.get(i).getAttribute("aria-label"));
 					extractDateTime = new Scanner(getDatetime.get(i).getText());
-					thumbsUp.add(num_ThumbsUp.next());
-					thumbsDown.add(num_ThumbsDown.next());
+					thumbsUp.add(num_ThumbsUp.nextInt());
+					thumbsDown.add(~(num_ThumbsDown.nextInt() - 1));
 					
 					temp_int = extractDateTime.next();
 					
@@ -233,20 +239,20 @@ public class Selenium extends WebCrawler{
 				throw new IllegalArgumentException("Please indicate a correct .csv file");
 			}
 			
-			File output = new File(fileName);
-			FileOutputStream fos = new FileOutputStream(output, false);	 
-			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+			File csvFile = new File(fileName);
+			FileWriter writer = new FileWriter(csvFile, false);	 
+			BufferedWriter buf_writer = new BufferedWriter(writer);
 			
-			bw.write("Article," + "User," + "Date," + "Likes," + "Dislikes," + "Comments");
-			bw.newLine();
-			int size = user_name.size()
-	;		for (int i = 0; i < size; i++) {
-				bw.write("\"" + article.get(i) + "\",\"" + user_name.get(i) + "\"," + dateTime.get(i) + "," + 
+			buf_writer.write("Article," + "User," + "Date," + "Likes," + "Dislikes," + "Comments");
+			buf_writer.newLine();
+			int size = user_name.size();		
+			for (int i = 0; i < size; i++) {
+				buf_writer.write("\"" + article.get(i) + "\",\"" + user_name.get(i) + "\"," + dateTime.get(i) + "," + 
 						thumbsUp.get(i) + "," + thumbsDown.get(i) + ",\"" + comments.get(i) + "\"");
-				bw.newLine();
+				buf_writer.newLine();
 			}
 		 
-			bw.close();
+			buf_writer.close();
 		}
 		catch (IllegalArgumentException e) {
 			System.out.println("No such element found.");
